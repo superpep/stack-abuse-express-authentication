@@ -33,7 +33,10 @@ function authenticateJWT(req, res, next){
             next();
         });
     } else { 
-            res.sendStatus(401); // unauthorized
+            res.render('login', {
+                message: 'Please login to continue',
+                messageClass: 'alert-danger'
+            });
         }
 };
 

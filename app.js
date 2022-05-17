@@ -4,7 +4,6 @@ const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const db = require("./database.js")
 const auth = require("./auth.js")
-const crypto = require('crypto');
 const app = express();
 const authTokens = {};
 
@@ -121,14 +120,12 @@ app.post('/register', (req, res) => {
 });
 
 app.get('/admin', auth.authenticateJWT, auth.authorizeAdmin, (req, res) => {
-    if (req.user) {
-        res.render('admin');
-    } else {
-        res.render('login', {
-            message: 'Please login to continue',
-            messageClass: 'alert-danger'
-        });
-    }
+    res.render('admin');
 });
+
+app.get('/protected', auth.authenticateJWT, (req, res) => {
+    res.render('protected');
+});
+
 
 app.listen(3000);
