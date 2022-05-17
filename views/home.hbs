@@ -3,6 +3,11 @@
 </nav>
 
 <div style="margin-top: 30px">
-    <a class="btn btn-primary btn-lg active" href="/login">Login</a>
-    <a class="btn btn-primary btn-lg active" href="/register">Register</a>
+    {{#if user}}
+        <a class="btn btn-primary btn-lg active" href="/logout">Logout</a>
+        <a class="btn btn-primary btn-lg active" href="/admin">Admin</a>
+    {{else}}
+        <a class="btn btn-primary btn-lg active" href="/login">Login</a>
+        <a class="btn btn-primary btn-lg active" href="/register">Register</a>    
+    {{/if}}
 </div>

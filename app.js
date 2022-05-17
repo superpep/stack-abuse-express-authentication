@@ -2,31 +2,13 @@ const express = require('express');
 const exphbs = require('express-handlebars');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
-
+const db = require("./database.js")
+const auth = require("./auth.js")
 const crypto = require('crypto');
 const app = express();
 const authTokens = {};
 
-const users = [
-    // This user is added to the array to avoid creating new user on each restart
-    {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'johndoe@email.com',
-        // This is the SHA256 hash for value of `password`
-        password: 'XohImNooBHFR0OVvjcYpJ3NgPQ1qq73WKhHvch0VQtg='
-    }
-];
 
-const getHashedPassword = (password) => {
-    const sha256 = crypto.createHash('sha256');
-    const hash = sha256.update(password).digest('base64');
-    return hash;
-}
-
-const generateAuthToken = () => {
-    return crypto.randomBytes(30).toString('hex');
-}
 
 // to support URL-encoded bodies
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -46,7 +28,9 @@ app.engine('hbs', exphbs({
 app.set('view engine', 'hbs');
 
 app.get('/', (req, res) => {
-    res.render('home');
+    res.render('home', {
+        user: req.user
+    });
 });
 
 app.get('/login', (req, res) => {
@@ -55,58 +39,78 @@ app.get('/login', (req, res) => {
 
 app.post('/login', (req, res) => {
     const { email, password } = req.body;
-    const hashedPassword = getHashedPassword(password);
 
-    const user = users.find(u => {
-        return u.email === email && hashedPassword === u.password
+    var sql = "SELECT * FROM user WHERE email = ?";
+    db.all(sql, [email], (err, rows) => {
+        if (err) {
+            res.render('login', {
+                message: 'Error: ' + err,
+                messageClass: 'alert-danger'
+            });
+        } else {
+            const user = rows[0]
+            if(user){
+                if (auth.isValidPass(password, user['password'])) {
+                    const authToken = auth.generateAuthToken(user);
+                    authTokens[authToken] = email;
+                    res.cookie('AuthToken', authToken);
+                    res.render('home', {
+                        user: user
+                    });
+                    return;
+                } else {
+                    res.render('login', {
+                        message: 'Invalid password',
+                        messageClass: 'alert-danger'
+                    });
+                }
+            } else {
+                res.render('login', {
+                    message: 'User does not exist',
+                    messageClass: 'alert-danger'
+                });
+            }
+        }
     });
-
-    if (user) {
-        const authToken = generateAuthToken();
-
-        authTokens[authToken] = email;
-
-        res.cookie('AuthToken', authToken);
-        res.redirect('/protected');
-        return;
-    } else {
-        res.render('login', {
-            message: 'Invalid username or password',
-            messageClass: 'alert-danger'
-        });
-    }
 });
 
 app.get('/register', (req, res) => {
     res.render('register');
 });
 
+app.get('/logout', (req, res) => {
+    if (req.user) {
+        res.cookie('AuthToken', '')
+        req.user = null
+        res.render('home', {
+            user: req.user
+        });
+    }
+});
+
 app.post('/register', (req, res) => {
-    const { email, firstName, lastName, password, confirmPassword } = req.body;
+    
+    const { email, firstName, lastName, password, confirmPassword, adminCheck } = req.body;
 
     if (password === confirmPassword) {
-        if (users.find(user => user.email === email)) {
+        const hashedPassword = auth.getHashedPassword(password);
 
-            res.render('register', {
-                message: 'User already registered.',
-                messageClass: 'alert-danger'
+        var sql ='INSERT INTO user (name, email, password, role) VALUES (?,?,?,?)'
+        var params =[firstName + lastName, email, hashedPassword, adminCheck === true ? 'admin' : 'user']
+        db.run(sql, params, function (err) {
+            if (err){
+                console.log(err)
+                res.render('register', {
+                    message: 'User already registered.',
+                    messageClass: 'alert-danger'
+                });
+                return;
+            }
+            res.render('login', {
+                message: 'Registration Complete. Please login to continue.',
+                messageClass: 'alert-success'
             });
-
             return;
-        }
-
-        const hashedPassword = getHashedPassword(password);
-
-        users.push({
-            firstName,
-            lastName,
-            email,
-            password: hashedPassword
-        });
-
-        res.render('login', {
-            message: 'Registration Complete. Please login to continue.',
-            messageClass: 'alert-success'
         });
     } else {
         res.render('register', {
@@ -116,9 +120,9 @@ app.post('/register', (req, res) => {
     }
 });
 
-app.get('/protected', (req, res) => {
+app.get('/admin', auth.authenticateJWT, auth.authorizeAdmin, (req, res) => {
     if (req.user) {
-        res.render('protected');
+        res.render('admin');
     } else {
         res.render('login', {
             message: 'Please login to continue',
