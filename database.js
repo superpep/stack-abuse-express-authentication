@@ -17,16 +17,16 @@ const db = new sqlite3.Database(DBSOURCE, (err) => {
             name text, 
             email text UNIQUE, 
             password text, 
-            role text,
+            role text, 
             CONSTRAINT email_unique UNIQUE (email)
-            )`,
+            )`, // Añadimos el campo 'role' que será 'admin' o 'user'
         (err) => {
             if (err) {
                 // Table already created
             }else{
                 // Table just created, creating some rows
-                var insert = 'INSERT INTO user (name, email, password, role) VALUES (?,?,?,?)'
-                db.run(insert, ["admin","admin@example.com",getHashedPassword("admin123456"), 'admin'])
+                var insert = 'INSERT INTO user (name, email, password, role) VALUES (?,?,?,?)' 
+                db.run(insert, ["admin","admin@example.com",getHashedPassword("admin123456"), 'admin']) // Añadimos un admin y debajo un user
                 db.run(insert, ["user","user@example.com",getHashedPassword("user123456"), 'user'])
             }
         });  

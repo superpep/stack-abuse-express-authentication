@@ -79,7 +79,7 @@ app.get('/register', (req, res) => {
 
 app.get('/logout', (req, res) => {
     if (req.user) {
-        res.cookie('AuthToken', '')
+        res.cookie('AuthToken', '') // Quan fem logout el token es buida
         req.user = null
         res.render('home', {
             user: req.user
@@ -89,15 +89,15 @@ app.get('/logout', (req, res) => {
 
 app.post('/register', (req, res) => {
     
-    const { email, firstName, lastName, password, confirmPassword, adminCheck } = req.body;
+    const { email, firstName, lastName, password, confirmPassword, adminCheck } = req.body; // adminCheck es un boolean
 
     if (password === confirmPassword) {
         const hashedPassword = auth.getHashedPassword(password);
 
         var sql ='INSERT INTO user (name, email, password, role) VALUES (?,?,?,?)'
-        var params =[firstName + lastName, email, hashedPassword, adminCheck === true ? 'admin' : 'user']
+        var params =[firstName + lastName, email, hashedPassword, adminCheck === true ? 'admin' : 'user'] // Al ser adminCheck boolean, si està a true és perque l'usuari serà admin, si no, es user
         db.run(sql, params, function (err) {
-            if (err){
+            if (err){ // Si la inserció dona error és perque l'usuari ja existeix
                 console.log(err)
                 res.render('register', {
                     message: 'User already registered.',
@@ -119,11 +119,11 @@ app.post('/register', (req, res) => {
     }
 });
 
-app.get('/admin', auth.authenticateJWT, auth.authorizeAdmin, (req, res) => {
+app.get('/admin', auth.authenticateJWT, auth.authorizeAdmin, (req, res) => { // Renderitzem admin passant per dos middlewares. El primer per a verificar el token i el segon per a verificar que l'usuari és admin
     res.render('admin');
 });
 
-app.get('/protected', auth.authenticateJWT, (req, res) => {
+app.get('/protected', auth.authenticateJWT, (req, res) => { // Al protected poden accedir tots els usuaris autenticats, per tant, sols comprovem que el token siga valid
     res.render('protected');
 });
 

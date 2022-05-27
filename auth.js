@@ -25,14 +25,14 @@ const generateAuthToken = (user) => {
 function authenticateJWT(req, res, next){
     const token = req.cookies['AuthToken']
     if (token) {
-        jwt.verify(token, secret, (err, user) => {
-            if (err) {
+        jwt.verify(token, secret, (err, user) => { // Verifiquem el token passant-li la nostra secret key.
+            if (err) { // Si dona error, el token és invalid
                 return res.sendStatus(403); 
             }
             req.user = user;
             next();
         });
-    } else { 
+    } else { // Si va per aci és perque no s'ha trovat la capçalera 'AuthToken' o ve buida (logout). Per tant ha de fer login
             res.render('login', {
                 message: 'Please login to continue',
                 messageClass: 'alert-danger'
@@ -40,7 +40,7 @@ function authenticateJWT(req, res, next){
         }
 };
 
-function authorizeAdmin(req, res, next){
+function authorizeAdmin(req, res, next){ // Este middleware autoriza a los administradores. Quien implemente este middleware significa que solo se podrá acceder si el usuario es admin
     if(req.user.role === 'admin') {
         next()
     } else {
