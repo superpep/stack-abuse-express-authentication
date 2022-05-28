@@ -79,7 +79,7 @@ app.get('/register', (req, res) => {
 
 app.get('/logout', (req, res) => {
     if (req.user) {
-        res.cookie('AuthToken', '') // Quan fem logout el token es buida
+        res.clearCookie('AuthToken'); // Quan fem logout el token s'elimina
         req.user = null
         res.render('home', {
             user: req.user
