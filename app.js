@@ -95,7 +95,7 @@ app.post('/register', (req, res) => {
         const hashedPassword = auth.getHashedPassword(password);
 
         var sql ='INSERT INTO user (name, email, password, role) VALUES (?,?,?,?)'
-        var params =[firstName + lastName, email, hashedPassword, adminCheck === true ? 'admin' : 'user'] // Al ser adminCheck boolean, si està a true és perque l'usuari serà admin, si no, es user
+        var params =[firstName + lastName, email, hashedPassword, adminCheck === 'on' ? 'admin' : 'user'] // Si adminCheck es 'on' (Osiga, q s'ha marcat) l'usuari serà admin, si no, es user
         db.run(sql, params, function (err) {
             if (err){ // Si la inserció dona error és perque l'usuari ja existeix
                 console.log(err)
